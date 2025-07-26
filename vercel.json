@@ -3,26 +3,6 @@
   "name": "letter-from-worlds-end",
   "alias": ["signal-from-end"],
   
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|webp|mp3|wav|ogg))",
-      "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
-      }
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html",
-      "headers": {
-        "Cache-Control": "public, max-age=0, must-revalidate"
-      }
-    }
-  ],
-  
   "headers": [
     {
       "source": "/(.*)",
@@ -65,6 +45,22 @@
           "value": "Content-Type, Authorization"
         }
       ]
+    },
+    {
+      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|webp|mp3|wav|ogg))",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
     }
   ],
   
@@ -73,6 +69,13 @@
       "runtime": "nodejs18.x"
     }
   },
+  
+  "crons": [
+    {
+      "path": "/api/scheduledLetter",
+      "schedule": "0 9 * * *"
+    }
+  ],
   
   "buildCommand": "npm run build",
   "outputDirectory": "dist"
