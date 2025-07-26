@@ -1,0 +1,102 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================================================
+    // 해독된 편지 컬렉션 (사용자별 개인 데이터)
+    // ============================================================================
+    match /decodedLetters/{docId} {
+      // 인증된 사용자만 자신의 해독 기록에 접근 가능
+      allow read, write: if request.auth != null 
+        && request.auth.uid == resource.data.userId;
+      
+      // 새 문서 생성 시에는 userId가 현재 사용자와 일치해야 함
+      allow create: if request.auth != null 
+        && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // ============================================================================
+    // 세계관 키워드 아카이브 (공개 읽기, 인증된 사용자만 쓰기)
+    // ============================================================================
+    match /worldArchive/{docId} {
+      // 모든 사용자가 읽기 가능 (키워드 조회용)
+      allow read: if true;
+      
+      // 인증된 사용자만 키워드 추가/수정 가능
+      allow write: if request.auth != null;
+      
+      // 키워드 생성 시 필수 필드 검증
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['keyword', 'firstSeenIn', 'relatedLetters', 'createdAt'])
+        && request.resource.data.keyword is string
+        && request.resource.data.keyword.size() > 0
+        && request.resource.data.firstSeenIn is string
+        && request.resource.data.relatedLetters is list
+        && request.resource.data.createdAt is timestamp;
+    }
+    
+    // ============================================================================
+    // 사용자 프로필 (선택사항 - 추후 확장용)
+    // ============================================================================
+    match /users/{userId} {
+      // 사용자는 자신의 프로필만 읽기/쓰기 가능
+      allow read, write: if request.auth != null 
+        && request.auth.uid == userId;
+    }
+    
+    // ============================================================================
+    // 편지 템플릿 (관리자만 수정, 모든 사용자 읽기)
+    // ============================================================================
+    match /letterTemplates/{docId} {
+      // 모든 사용자가 읽기 가능 (편지 내용 조회용)
+      allow read: if true;
+      
+      // 관리자만 편지 템플릿 수정 가능 (커스텀 클레임 또는 특정 이메일)
+      allow write: if request.auth != null 
+        && (
+          // 관리자 이메일 확인 (실제 관리자 이메일로 변경 필요)
+          request.auth.token.email == 'admin@signalfromend.com'
+          // 또는 커스텀 클레임 사용
+          // || request.auth.token.admin == true
+        );
+    }
+    
+    // ============================================================================
+    // 게임 진행 상태 (사용자별)
+    // ============================================================================
+    match /gameProgress/{userId} {
+      // 사용자는 자신의 게임 진행 상태만 접근 가능
+      allow read, write: if request.auth != null 
+        && request.auth.uid == userId;
+      
+      // 진행 상태 생성 시 필수 필드 검증
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['userId', 'unlockedChapters', 'totalDecoded', 'lastActivity'])
+        && request.resource.data.userId == userId
+        && request.resource.data.unlockedChapters is list
+        && request.resource.data.totalDecoded is number
+        && request.resource.data.totalDecoded >= 0;
+    }
+    
+    // ============================================================================
+    // 통계 및 분석 (읽기 전용, 관리자만 쓰기)
+    // ============================================================================
+    match /analytics/{docId} {
+      // 인증된 사용자는 읽기 가능
+      allow read: if request.auth != null;
+      
+      // 관리자만 통계 데이터 수정 가능
+      allow write: if request.auth != null 
+        && request.auth.token.email == 'admin@signalfromend.com';
+    }
+    
+    // ============================================================================
+    // 기본 거부 규칙 (명시적으로 허용되지 않은 모든 접근 차단)
+    // ============================================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 
