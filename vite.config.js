@@ -4,6 +4,12 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  base: './',
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src')
+    }
+  },
   server: {
     port: 3000,
     open: true
@@ -11,11 +17,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     rollupOptions: {
-      input: resolve(__dirname, 'index.html'),
-      external: ['firebase-admin'],
-      output: {
-        manualChunks: undefined
-      }
+      external: ['firebase-admin']
     }
   }
 }) 
