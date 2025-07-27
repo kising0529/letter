@@ -1,6 +1,8 @@
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
-require('dotenv').config({ path: '.env.local' });
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { config } from 'dotenv';
+
+config({ path: '.env.local' });
 
 console.log('🔥 Firebase에 편지 생성 시작...');
 
